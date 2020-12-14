@@ -221,7 +221,7 @@ public class ImageProcessor extends Handler {
 
             Point[] rescaledPoints = new Point[4];
 
-            double ratio = inputRgba.size().height / 500;
+            double ratio = inputRgba.size().height / 200;
 
             for ( int i=0; i<4 ; i++ ) {
                 int x = Double.valueOf(quad.getPoints()[i].x*ratio).intValue();
@@ -285,7 +285,7 @@ public class ImageProcessor extends Handler {
 
     private Quadrilateral getQuadrilateral( ArrayList<MatOfPoint> contours , Size srcSize ) {
 
-        double ratio = srcSize.height / 500;
+        double ratio = srcSize.height / 200;
         int height = Double.valueOf(srcSize.height / ratio).intValue();
         int width = Double.valueOf(srcSize.width / ratio).intValue();
         Size size = new Size(width,height);
@@ -429,7 +429,7 @@ public class ImageProcessor extends Handler {
     @NonNull
     private Mat fourPointTransform( Mat src , Point[] pts ) {
 
-        double ratio = src.size().height / 500;
+        double ratio = src.size().height / 200;
 
         Point tl = pts[0];
         Point tr = pts[1];
@@ -470,7 +470,7 @@ public class ImageProcessor extends Handler {
         Mat cannedImage = null;
         Mat resizedImage = null;
 
-        double ratio = src.size().height / 500;
+        double ratio = src.size().height / 200;
         int height = Double.valueOf(src.size().height / ratio).intValue();
         int width = Double.valueOf(src.size().width / ratio).intValue();
         Size size = new Size(width,height);

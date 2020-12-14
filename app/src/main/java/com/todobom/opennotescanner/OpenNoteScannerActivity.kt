@@ -122,7 +122,6 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         hUD = findViewById(R.id.hud)
         mWaitSpinner = findViewById(R.id.wait_spinner)
 
-
         // Set up the user interaction to manually show or hide the system UI.
         mContentView.setOnClickListener { toggle() }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -138,48 +137,21 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
             } else {
                 scanClicked = true
                 Toast.makeText(applicationContext, R.string.scanningToast, Toast.LENGTH_LONG).show()
-                v.backgroundTintList = ColorStateList.valueOf(0x7F60FF60)
+                v.backgroundTintList = ColorStateList.valueOf(0x60000000)
             }
         }
-        val colorModeButton = findViewById<ImageView>(R.id.colorModeButton)
-        colorModeButton.setOnClickListener { v: View ->
-            colorMode = !colorMode
-            (v as ImageView).setColorFilter(if (colorMode) -0x1 else -0x5f0f60)
-            sendImageProcessorMessage("colorMode", colorMode)
-            Toast.makeText(applicationContext, if (colorMode) R.string.colorMode else R.string.bwMode, Toast.LENGTH_SHORT).show()
-        }
-        val filterModeButton = findViewById<ImageView>(R.id.filterModeButton)
-        filterModeButton.setOnClickListener { v: View ->
-            filterMode = !filterMode
-            (v as ImageView).setColorFilter(if (filterMode) -0x1 else -0x5f0f60)
-            sendImageProcessorMessage("filterMode", filterMode)
-            Toast.makeText(applicationContext, if (filterMode) R.string.filterModeOn else R.string.filterModeOff, Toast.LENGTH_SHORT).show()
-        }
+
         val flashModeButton = findViewById<ImageView>(R.id.flashModeButton)
         flashModeButton.setOnClickListener { v: View ->
             mFlashMode = setFlash(!mFlashMode)
             (v as ImageView).setColorFilter(if (mFlashMode) -0x1 else -0x5f0f60)
         }
-        val autoModeButton = findViewById<ImageView>(R.id.autoModeButton)
-        autoModeButton.setOnClickListener { v: View ->
-            autoMode = !autoMode
-            (v as ImageView).setColorFilter(if (autoMode) -0x1 else -0x5f0f60)
-            Toast.makeText(applicationContext, if (autoMode) R.string.autoMode else R.string.manualMode, Toast.LENGTH_SHORT).show()
-        }
-        val settingsButton = findViewById<ImageView>(R.id.settingsButton)
-        settingsButton.setOnClickListener { v: View ->
-            val intent = Intent(v.context, SettingsActivity::class.java)
-            startActivity(intent)
-        }
+
         val galleryButton = findViewById<FloatingActionButton>(R.id.galleryButton)
         galleryButton.setOnClickListener { v: View ->
             val intent = Intent(v.context, GalleryGridActivity::class.java)
             startActivity(intent)
         }
-        mFabToolbar = findViewById(R.id.fabtoolbar)
-        val fabToolbarButton = findViewById<FloatingActionButton>(R.id.fabtoolbar_fab)
-        fabToolbarButton.setOnClickListener { mFabToolbar.show() }
-        findViewById<View>(R.id.hideToolbarButton).setOnClickListener { mFabToolbar.hide() }
     }
 
     fun setFlash(stateFlash: Boolean): Boolean {
@@ -463,16 +435,17 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
     override fun surfaceCreated(holder: SurfaceHolder) {
         val camera = try {
             val cameraId = findBestCamera()
-            Camera.open(cameraId) as Camera
+            open(cameraId) as Camera
         } catch (e: RuntimeException) {
             return
         }
         mCamera = camera
 
         val param: Camera.Parameters
-        param = camera.getParameters()
-        val pSize = maxPreviewResolution
-        param.setPreviewSize(pSize!!.width, pSize.height)
+        param = camera.parameters
+        val pSize = maxPreviewResolution ?: return
+
+        param.setPreviewSize(pSize.width, pSize.height)
         val previewRatio = pSize.width.toFloat() / pSize.height
         val display = windowManager.defaultDisplay
         val size = Point()
@@ -519,9 +492,9 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         }
         val pm = packageManager
         if (pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
-            param.flashMode = if (mFlashMode) Camera.Parameters.FLASH_MODE_TORCH else Camera.Parameters.FLASH_MODE_OFF
+            param.flashMode = if (mFlashMode) Parameters.FLASH_MODE_TORCH else Parameters.FLASH_MODE_OFF
         }
-        camera.setParameters(param)
+        camera.parameters = param
         mBugRotate = mSharedPref.getBoolean("bug_rotate", false)
         if (mBugRotate) {
             camera.setDisplayOrientation(270)
@@ -581,7 +554,7 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
     }
 
     fun invalidateHUD() {
-        runOnUiThread { hUD!!.invalidate() }
+        runOnUiThread { hUD?.invalidate() }
     }
 
     private inner class ResetShutterColor : Runnable {
@@ -695,7 +668,7 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
                 val buffer = ByteArray(1024)
                 var len: Int
                 while (inputStream.read(buffer).also { len = it } > 0) {
-                    realOutputStream!!.write(buffer, 0, len)
+                    realOutputStream?.write(buffer, 0, len)
                 }
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
@@ -705,8 +678,8 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
                 return
             } finally {
                 try {
-                    inputStream!!.close()
-                    realOutputStream!!.close()
+                    inputStream?.close()
+                    realOutputStream?.close()
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
@@ -753,7 +726,7 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
                 _shootMP = MediaPlayer.create(this, Uri.parse("file:///system/media/audio/ui/camera_click.ogg"))
             }
             if (_shootMP != null) {
-                _shootMP!!.start()
+                _shootMP?.start()
             }
         }
     }
