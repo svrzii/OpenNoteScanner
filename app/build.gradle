@@ -1,4 +1,4 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
@@ -8,7 +8,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     defaultConfig {
-        applicationId "com.todobom.opennotescanner"
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 36
@@ -24,12 +23,10 @@ android {
     productFlavors {
         fdroid {
             dimension "version"
-            applicationIdSuffix ""
             versionNameSuffix "-fdroid"
         }
         gplay {
             dimension "version"
-            applicationIdSuffix ""
             versionNameSuffix "-gplay"
         }
     }

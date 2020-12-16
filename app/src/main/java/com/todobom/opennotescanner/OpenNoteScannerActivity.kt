@@ -17,7 +17,6 @@ import android.media.ExifInterface
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.*
-import android.preference.PreferenceManager
 import android.provider.MediaStore
 import android.util.Log
 import android.view.*
@@ -37,7 +36,6 @@ import com.todobom.opennotescanner.helpers.*
 import com.todobom.opennotescanner.helpers.ScanTopicDialogFragment.SetTopicDialogListener
 import com.todobom.opennotescanner.views.HUDCanvasView
 import org.opencv.android.BaseLoaderCallback
-import org.opencv.android.OpenCVLoader
 import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
