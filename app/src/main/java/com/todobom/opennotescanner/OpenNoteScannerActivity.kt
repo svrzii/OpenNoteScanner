@@ -2,12 +2,12 @@ package com.todobom.opennotescanner
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.graphics.Point
 import android.graphics.Rect
 import android.hardware.Camera
@@ -21,6 +21,9 @@ import android.preference.PreferenceManager
 import android.provider.MediaStore
 import android.util.Log
 import android.view.*
+import android.view.animation.Animation
+import android.view.animation.LinearInterpolator
+import android.view.animation.RotateAnimation
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.RelativeLayout
@@ -28,14 +31,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.github.fafaldo.fabtoolbar.widget.FABToolbarLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.todobom.opennotescanner.helpers.*
 import com.todobom.opennotescanner.helpers.ScanTopicDialogFragment.SetTopicDialogListener
 import com.todobom.opennotescanner.views.HUDCanvasView
-import org.matomo.sdk.Tracker
-import org.matomo.sdk.extra.TrackHelper
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.Core
@@ -48,12 +48,14 @@ import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
 class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener,
         SurfaceHolder.Callback, PictureCallback, PreviewCallback, SetTopicDialogListener {
+
     private val mHideHandler = Handler()
     private lateinit var mContentView: View
     private val mHidePart2Runnable = Runnable { // Delayed removal of status and navigation bar
@@ -83,18 +85,14 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
     private lateinit var mImageProcessor: ImageProcessor
     private var mSurfaceHolder: SurfaceHolder? = null
     private var mCamera: Camera? = null
-    private lateinit var mThis: OpenNoteScannerActivity
     private var mFocused = false
     var hUD: HUDCanvasView? = null
-        private set
     private lateinit var mWaitSpinner: View
-    private lateinit var mFabToolbar: FABToolbarLayout
     private var mBugRotate = false
     private lateinit var mSharedPref: SharedPreferences
     private val mDateFormat = SimpleDateFormat("yyyy:MM:dd HH:mm:ss")
     private var scanTopic: String? = null
     private var mat: Mat? = null
-    private lateinit var tracker: Tracker
 
     fun setImageProcessorBusy(imageProcessorBusy: Boolean) {
         this.imageProcessorBusy = imageProcessorBusy
@@ -108,13 +106,6 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
     private var attemptToFocus = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mThis = this
-        mSharedPref = PreferenceManager.getDefaultSharedPreferences(this)
-        if (mSharedPref.getBoolean("isFirstRun", true) && !mSharedPref.getBoolean("usage_stats", false)) {
-            statsOptInDialog()
-        }
-        tracker = (application as OpenNoteScannerApplication).tracker
-        TrackHelper.track().screen("/OpenNoteScannerActivity").title("Main Screen").with(tracker)
         setContentView(R.layout.activity_open_note_scanner)
         mVisible = true
         mControlsView = findViewById(R.id.fullscreen_content_controls)
@@ -129,15 +120,25 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         val size = Point()
         display.getRealSize(size)
         scanDocButton = findViewById<Button>(R.id.scanDocButton)
+
         scanDocButton.setOnClickListener { v: View ->
             if (scanClicked) {
                 requestPicture()
                 scanDocButton.backgroundTintList = null
                 waitSpinnerVisible()
             } else {
+
+                val rotate = RotateAnimation(0f, 359f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
+                rotate.repeatCount = Animation.INFINITE
+                rotate.duration = 5000
+
+                rotate.interpolator = LinearInterpolator()
+                rotate.fillAfter = true
+                scanDocButton.startAnimation(rotate)
+
                 scanClicked = true
                 Toast.makeText(applicationContext, R.string.scanningToast, Toast.LENGTH_LONG).show()
-                v.backgroundTintList = ColorStateList.valueOf(0x60000000)
+//                v.backgroundTintList = ColorStateList.valueOf(0x60000000)
             }
         }
 
@@ -150,7 +151,7 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         val galleryButton = findViewById<FloatingActionButton>(R.id.galleryButton)
         galleryButton.setOnClickListener { v: View ->
             val intent = Intent(v.context, GalleryGridActivity::class.java)
-            startActivity(intent)
+            startActivityForResult(intent, REQUEST_CODE_PDF_CREATED)
         }
     }
 
@@ -300,8 +301,8 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
             Log.d(TAG, "myBuild $build")
         }
         checkCreatePermissions()
-        CustomOpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, this, mLoaderCallback)
-        //TODO these should go in the variable's creation
+//        CustomOpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, this, mLoaderCallback)
+//        TODO these should go in the variable's creation
         mImageThread = HandlerThread("Worker Thread")
         mImageThread.start()
         mImageProcessor = ImageProcessor(mImageThread.looper, this)
@@ -560,6 +561,7 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
     private inner class ResetShutterColor : Runnable {
         override fun run() {
             scanDocButton.backgroundTintList = null
+            scanDocButton.clearAnimation()
         }
     }
 
@@ -570,7 +572,7 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         if (safeToTakePicture) {
             runOnUiThread(resetShutterColor)
             safeToTakePicture = false
-            camera.takePicture(null, null, mThis)
+            camera.takePicture(null, null, this)
             return true
         }
         return false
@@ -606,7 +608,7 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         safeToTakePicture = true
     }
 
-    fun sendImageProcessorMessage(messageText: String, obj: Any?) {
+    private fun sendImageProcessorMessage(messageText: String, obj: Any?) {
         Log.d(TAG, "sending message to ImageProcessor: " + messageText + " - " + obj.toString())
         val msg = mImageProcessor.obtainMessage()
         msg.obj = OpenNoteMessage(messageText, obj)
@@ -696,7 +698,6 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         }
 
         // Record goal "PictureTaken"
-        TrackHelper.track().event("Picture", "PictureTaken").with(tracker)
         refreshCamera()
     }
 
@@ -735,22 +736,18 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         return false
     }
 
-    private fun statsOptInDialog() {
-        val statsOptInDialog = AlertDialog.Builder(this)
-        statsOptInDialog.setTitle(getString(R.string.stats_optin_title))
-        statsOptInDialog.setMessage(getString(R.string.stats_optin_text))
-        statsOptInDialog.setPositiveButton(R.string.answer_yes) { dialog: DialogInterface, which: Int ->
-            mSharedPref.edit().putBoolean("usage_stats", true).commit()
-            mSharedPref.edit().putBoolean("isFirstRun", false).commit()
-            dialog.dismiss()
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            REQUEST_CODE_PDF_CREATED -> if (resultCode == Activity.RESULT_OK && data != null) {
+                val fileUri = data.data ?: return
+                val intent = Intent()
+                intent.data = fileUri
+                setResult(RESULT_OK, intent)
+                finish()
+            }
         }
-        statsOptInDialog.setNegativeButton(R.string.answer_no) { dialog: DialogInterface, which: Int ->
-            mSharedPref.edit().putBoolean("usage_stats", false).commit()
-            mSharedPref.edit().putBoolean("isFirstRun", false).commit()
-            dialog.dismiss()
-        }
-        statsOptInDialog.setNeutralButton(R.string.answer_later) { dialog: DialogInterface, which: Int -> dialog.dismiss() }
-        statsOptInDialog.create().show()
     }
 
     companion object {
@@ -763,5 +760,8 @@ class OpenNoteScannerActivity : AppCompatActivity(), NavigationView.OnNavigation
         private const val MY_PERMISSIONS_REQUEST_WRITE = 3
         private const val RESUME_PERMISSIONS_REQUEST_CAMERA = 11
         private const val TAG = "OpenNoteScannerActivity"
+
+        const val ARG_KEY_PDF_FILE_URI = "arg_key_pdf_file_uri"
+        const val REQUEST_CODE_PDF_CREATED = 12163
     }
 }

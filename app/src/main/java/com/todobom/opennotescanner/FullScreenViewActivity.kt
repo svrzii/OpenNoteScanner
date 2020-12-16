@@ -2,24 +2,20 @@ package com.todobom.opennotescanner
 
 import android.app.AlertDialog
 import android.content.DialogInterface
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.FileProvider
 import androidx.viewpager.widget.ViewPager
 import androidx.viewpager.widget.ViewPager.OnPageChangeListener
 import com.nostra13.universalimageloader.core.ImageLoader
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration
 import com.nostra13.universalimageloader.core.assist.ImageSize
-import com.todobom.opennotescanner.helpers.AboutFragment
 import com.todobom.opennotescanner.helpers.Utils
 import com.todobom.opennotescanner.helpers.Utils.Companion.maxTextureSize
 import com.todobom.opennotescanner.helpers.Utils.Companion.removeImageFromGallery
-import com.todobom.opennotescanner.views.TagEditorFragment
 import java.io.File
 
 class FullScreenViewActivity : AppCompatActivity() {
@@ -103,48 +99,51 @@ class FullScreenViewActivity : AppCompatActivity() {
         // as you specify a parent activity in AndroidManifest.xml.
         val id = item.itemId
         when (id) {
-            android.R.id.home -> finish()
-            R.id.action_tag -> {
-                tagImage()
+            android.R.id.home -> {
+                finish()
                 return true
             }
-            R.id.action_share -> {
-                shareImage()
-                return true
-            }
+//            R.id.action_tag -> {
+//                tagImage()
+//                return true
+//            }
+//            R.id.action_share -> {
+//                shareImage()
+//                return true
+//            }
             R.id.action_delete -> {
                 deleteConfirmBuilder.create().show()
                 return true
             }
-            R.id.action_about -> {
-                val fm = supportFragmentManager
-                val aboutDialog = AboutFragment()
-                aboutDialog.show(fm, "about_view")
-            }
+//            R.id.action_about -> {
+//                val fm = supportFragmentManager
+//                val aboutDialog = AboutFragment()
+//                aboutDialog.show(fm, "about_view")
+//            }
             else -> {
             }
         }
         return super.onOptionsItemSelected(item)
     }
-
-    private fun tagImage() {
-        val item = mViewPager.currentItem
-        val filePath = mAdapter.getPath(item)
-        if (filePath.endsWith(".png")) {
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle(R.string.format_not_supported)
-            builder.setMessage(R.string.format_not_supported_message)
-            builder.setPositiveButton(android.R.string.ok) { dialog: DialogInterface, which: Int -> dialog.dismiss() }
-            val alerta = builder.create()
-            alerta.show()
-            return
-        }
-        val fm = supportFragmentManager
-        val tagEditorDialog = TagEditorFragment()
-        tagEditorDialog.setFilePath(filePath)
-        tagEditorDialog.setRunOnDetach { }
-        tagEditorDialog.show(fm, "tageditor_view")
-    }
+//
+//    private fun tagImage() {
+//        val item = mViewPager.currentItem
+//        val filePath = mAdapter.getPath(item)
+//        if (filePath.endsWith(".png")) {
+//            val builder = AlertDialog.Builder(this)
+//            builder.setTitle(R.string.format_not_supported)
+//            builder.setMessage(R.string.format_not_supported_message)
+//            builder.setPositiveButton(android.R.string.ok) { dialog: DialogInterface, which: Int -> dialog.dismiss() }
+//            val alerta = builder.create()
+//            alerta.show()
+//            return
+//        }
+//        val fm = supportFragmentManager
+//        val tagEditorDialog = TagEditorFragment()
+//        tagEditorDialog.setFilePath(filePath)
+//        tagEditorDialog.setRunOnDetach { }
+//        tagEditorDialog.show(fm, "tageditor_view")
+//    }
 
     private fun deleteImage() {
         val item = mViewPager.currentItem
@@ -155,16 +154,5 @@ class FullScreenViewActivity : AppCompatActivity() {
         loadAdapter()
         if (0 == mAdapter.count) finish()
         mViewPager.currentItem = item
-    }
-
-    fun shareImage() {
-        val pager = mViewPager
-        val item = pager.currentItem
-        val shareIntent = Intent(Intent.ACTION_SEND)
-        shareIntent.type = "image/jpg"
-        val uri = FileProvider.getUriForFile(applicationContext, "$packageName.fileprovider", File(mAdapter.getPath(item)))
-        shareIntent.putExtra(Intent.EXTRA_STREAM, uri)
-        Log.d("Fullscreen", "uri $uri")
-        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_snackbar)))
     }
 }

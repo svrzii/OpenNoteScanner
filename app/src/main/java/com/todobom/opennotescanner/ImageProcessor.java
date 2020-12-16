@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.drawable.shapes.PathShape;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -270,10 +271,17 @@ public class ImageProcessor extends Handler {
         PathShape newBox = new PathShape(path , previewWidth , previewHeight);
 
         Paint paint = new Paint();
-        paint.setColor(Color.argb(64, 0, 255, 0));
 
         Paint border = new Paint();
-        border.setColor(Color.rgb(0, 255, 0));
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            paint.setColor(mMainActivity.getColor(R.color.colorPrimaryAlpha));
+            border.setColor(mMainActivity.getColor(R.color.colorPrimary));
+        } else {
+            paint.setColor(Color.argb(64, 0, 0, 255));
+            border.setColor(Color.rgb(0, 0, 255));
+        }
+
         border.setStrokeWidth(5);
 
         hud.clear();
